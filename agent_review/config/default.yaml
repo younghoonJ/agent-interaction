@@ -1,0 +1,60 @@
+rabbitmq:
+  url: "amqp://agent:agent@localhost:5672/%2F"
+
+project:
+  root: "."
+  report_dir: ".agent_reports"
+  include_extensions:
+    - ".py"
+    - ".md"
+    - ".yaml"
+    - ".yml"
+    - ".json"
+    - ".toml"
+    - ".sh"
+    - ".cpp"
+    - ".hpp"
+    - ".c"
+    - ".h"
+    - ".ts"
+    - ".js"
+  exclude_dirs:
+    - ".git"
+    - ".venv"
+    - "venv"
+    - "env"
+    - "test_env"
+    - "node_modules"
+    - "build"
+    - "dist"
+    - "__pycache__"
+    - ".cache"
+    - ".agent_reports"
+  exclude_patterns:
+    - "*.pyc"
+    - "*.so"
+    - "*.dll"
+    - "*.png"
+    - "*.jpg"
+
+review:
+  mode: "review_only"
+  max_rounds: 4
+  first_agent: "codex"
+  agent_sequence:
+    - "codex"
+    - "claude"
+  stop_when_no_findings: true
+
+safety:
+  allow_source_modification: false
+  allowed_write_dirs:
+    - ".agent_reports"
+  fail_on_unexpected_git_diff: true
+
+retry:
+  max_retries: 3
+  retry_delays_seconds:
+    - 10
+    - 60
+    - 300

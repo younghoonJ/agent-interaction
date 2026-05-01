@@ -1,0 +1,11 @@
+test_env/
+agent_review.egg-info/
+CLAUDE.md
+AGENTS.md
+.agent-spec/
+.agent_reports/
+.codex/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/

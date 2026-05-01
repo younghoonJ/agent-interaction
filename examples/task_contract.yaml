@@ -1,0 +1,23 @@
+created_at: '2026-05-01T00:00:00+09:00'
+current_agent: codex
+forbidden_actions:
+- modify_file
+- git_commit
+- delete_file
+max_rounds: 4
+message_type: agent_task
+mode: review_only
+next_agent: claude
+previous_reports: []
+project_root: /path/to/project
+review_focus:
+- correctness
+- implementation_feasibility
+- test_coverage
+- api_compatibility
+- maintainability
+round: 1
+schema_version: '1.0'
+target_files:
+- src/compiler/graph.py
+task_id: TASK-2026-05-01-001

@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools==69.5.1", "wheel==0.43.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-review"
+version = "0.1.0"
+description = "Alternating Codex and Claude Code review orchestration system."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "pika==1.3.2",
+    "PyYAML==6.0.2",
+]
+
+[project.scripts]
+agent-review = "agent_review.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["agent_review*"]
+
+[tool.setuptools.package-data]
+agent_review = ["config/default.yaml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

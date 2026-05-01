@@ -1,0 +1,41 @@
+{
+  "agent": "codex",
+  "findings": [
+    {
+      "category": "correctness",
+      "confidence": 0.78,
+      "description": "The function assumes rank-4 input but does not validate it.",
+      "file": "src/compiler/graph.py",
+      "id": "F001",
+      "line": 120,
+      "severity": "medium",
+      "suggestion": "Add explicit rank check or document the invariant.",
+      "title": "Potential missing shape validation"
+    }
+  ],
+  "next_agent_focus": [
+    "Validate whether rank-4 is an invariant in earlier passes."
+  ],
+  "questions": [
+    "Is rank-4 guaranteed by a previous canonicalization pass?"
+  ],
+  "requires_human_review": false,
+  "round": 1,
+  "status": "completed",
+  "suggestions": [
+    {
+      "affected_files": [
+        "tests/test_graph.py"
+      ],
+      "description": "Add a test case for non-rank-4 input.",
+      "id": "S001",
+      "title": "Add rank mismatch test",
+      "type": "test"
+    }
+  ],
+  "summary": "Found 1 potential issue and 1 test improvement opportunity.",
+  "target_files": [
+    "src/compiler/graph.py"
+  ],
+  "task_id": "TASK-2026-05-01-001"
+}
