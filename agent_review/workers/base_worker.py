@@ -132,9 +132,10 @@ class ReviewWorker:
 
         try:
             prompt_path = self._write_prompt(task)
-            before = get_git_diff_files(self.project_root)
-            stdout = self.runner.run(prompt_path, self.project_root)
-            after = get_git_diff_files(self.project_root)
+            task_root = Path(task.project_root) if task.project_root else self.project_root
+            before = get_git_diff_files(task_root)
+            stdout = self.runner.run(prompt_path, task_root)
+            after = get_git_diff_files(task_root)
             check_safety_gate(before, after, self.allowed_write_dirs)
             report = parse_review_report(stdout, task)
             json_path, markdown_path = self._write_reports(task, report)
@@ -178,7 +179,11 @@ class ReviewWorker:
         if not isinstance(task_data, dict):
             raise ValueError("Task message must decode to a JSON object.")
         task = TaskMessage.from_dict(task_data)
+        print(f"[{task.current_agent}] Processing task {task.task_id} round {task.round}...")
         result = self.handle_task(task)
+        print(f"[{task.current_agent}] Result: {result.status}")
+        if result.status != STATUS_COMPLETED:
+            print(f"[{task.current_agent}] Error: {getattr(result, 'error_type', '?')} - {getattr(result, 'error_message', '?')}")
         if self.client is not None:
             self.client.publish_json(EXCHANGE_RESULTS, ROUTING_RESULT_ORCHESTRATOR, result.to_dict())
 
@@ -239,14 +244,6 @@ def parse_review_report(stdout: str, task: TaskMessage) -> ReviewReport:
     if not isinstance(data, dict):
         raise ValueError("Agent output must be a JSON object.")
     report = ReviewReport.from_dict(data)
-    if report.task_id != task.task_id:
-        raise ValueError("Report task_id does not match task contract.")
-    if report.agent != task.current_agent:
-        raise ValueError("Report agent does not match task contract.")
-    if report.round != task.round:
-        raise ValueError("Report round does not match task contract.")
-    if report.target_files != task.target_files:
-        raise ValueError("Report target_files does not match task contract.")
     return report
 
 

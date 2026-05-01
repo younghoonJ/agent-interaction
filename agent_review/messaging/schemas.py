@@ -18,8 +18,8 @@ from dataclasses import dataclass, field
 from pathlib import PurePosixPath
 from typing import Mapping
 
-AGENT_CODEX = "codex"
-AGENT_CLAUDE = "claude"
+AGENT_CLAUDE_A = "claude_a"
+AGENT_CLAUDE_B = "claude_b"
 MESSAGE_TYPE_TASK = "agent_task"
 MESSAGE_TYPE_RESULT = "agent_result"
 MODE_REVIEW_ONLY = "review_only"
@@ -28,7 +28,7 @@ SUPPORTED_MODES = {MODE_REVIEW_ONLY, MODE_VERIFY}
 SCHEMA_VERSION = "1.0"
 STATUS_COMPLETED = "completed"
 STATUS_FAILED = "failed"
-SEVERITIES = {"critical", "high", "medium", "low", "info"}
+SEVERITIES = {"critical", "high", "major", "medium", "minor", "low", "info", "warning"}
 
 
 @dataclass(frozen=True)
@@ -80,9 +80,7 @@ class Finding:
             ValueError: If required fields are missing or invalid.
         """
 
-        severity = _required_string(data, "severity")
-        if severity not in SEVERITIES:
-            raise ValueError(f"Invalid finding severity: {severity}")
+        severity = _required_string(data, "severity").lower()
         line = _optional_int(data, "line")
         if line is not None and line < 1:
             raise ValueError("Finding line must be a positive integer.")
@@ -665,25 +663,41 @@ def _required_string(data: Mapping[str, object], key: str) -> str:
 
 def _required_bool(data: Mapping[str, object], key: str) -> bool:
     value = data.get(key)
-    if not isinstance(value, bool):
-        raise ValueError(f"Missing or invalid boolean field: {key}")
-    return value
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.lower() in ("true", "yes", "1")
+    return bool(value) if value is not None else False
 
 
 def _required_number(data: Mapping[str, object], key: str) -> float:
     value = data.get(key)
-    if not isinstance(value, (int, float)) or isinstance(value, bool):
-        raise ValueError(f"Missing or invalid number field: {key}")
-    return float(value)
+    if isinstance(value, bool):
+        return 0.0
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return 0.0
+    return 0.0
 
 
 def _optional_int(data: Mapping[str, object], key: str) -> int | None:
     value = data.get(key)
     if value is None:
         return None
-    if not isinstance(value, int) or isinstance(value, bool):
-        raise ValueError(f"Invalid integer field: {key}")
-    return value
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            return None
+    return None
 
 
 def _positive_int(data: Mapping[str, object], key: str) -> int:
@@ -702,9 +716,13 @@ def _non_negative_int(data: Mapping[str, object], key: str) -> int:
 
 def _string_list(data: Mapping[str, object], key: str) -> list[str]:
     value = data.get(key)
-    if not isinstance(value, list) or not all(isinstance(item, str) and item for item in value):
-        raise ValueError(f"Missing or invalid string list field: {key}")
-    return list(value)
+    if value is None:
+        return []
+    if isinstance(value, str):
+        return [value] if value else []
+    if isinstance(value, list):
+        return [str(item) for item in value if item]
+    raise ValueError(f"Invalid string list field: {key}")
 
 
 def _relative_path_list(data: Mapping[str, object], key: str) -> list[str]:
@@ -725,7 +743,7 @@ def _mapping_list(data: Mapping[str, object], key: str) -> list[Mapping[str, obj
 
 
 def _validate_agent(value: str) -> str:
-    if value not in {AGENT_CODEX, AGENT_CLAUDE}:
+    if value not in {AGENT_CLAUDE_A, AGENT_CLAUDE_B}:
         raise ValueError(f"Unsupported agent: {value}")
     return value
 

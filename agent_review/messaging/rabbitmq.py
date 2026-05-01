@@ -22,12 +22,12 @@ EXCHANGE_TASKS = "agent.tasks"
 EXCHANGE_RESULTS = "agent.results"
 EXCHANGE_EVENTS = "agent.events"
 EXCHANGE_DLX = "agent.dlx"
-QUEUE_CODEX = "agent.task.codex"
-QUEUE_CLAUDE = "agent.task.claude"
+QUEUE_CLAUDE_A = "agent.task.claude_a"
+QUEUE_CLAUDE_B = "agent.task.claude_b"
 QUEUE_RESULTS = "agent.result.orchestrator"
 QUEUE_DEAD = "agent.dead"
-ROUTING_TASK_CODEX = "task.codex"
-ROUTING_TASK_CLAUDE = "task.claude"
+ROUTING_TASK_CLAUDE_A = "task.claude_a"
+ROUTING_TASK_CLAUDE_B = "task.claude_b"
 ROUTING_RESULT_ORCHESTRATOR = "result.orchestrator"
 ROUTING_DEAD_TASK = "dead.task"
 
@@ -56,7 +56,10 @@ class RabbitMQClient:
             raise RuntimeError("RabbitMQ support requires the pinned pika dependency.") from exc
 
         self._pika = pika
-        self.connection = pika.BlockingConnection(pika.URLParameters(url))
+        params = pika.URLParameters(url)
+        params.heartbeat = 0
+        params.blocked_connection_timeout = None
+        self.connection = pika.BlockingConnection(params)
         self.channel = self.connection.channel()
 
     def setup(self) -> None:
@@ -82,13 +85,13 @@ class RabbitMQClient:
             "x-dead-letter-exchange": EXCHANGE_DLX,
             "x-dead-letter-routing-key": ROUTING_DEAD_TASK,
         }
-        channel.queue_declare(QUEUE_CODEX, durable=True, arguments=dead_letter_args)
-        channel.queue_declare(QUEUE_CLAUDE, durable=True, arguments=dead_letter_args)
+        channel.queue_declare(QUEUE_CLAUDE_A, durable=True, arguments=dead_letter_args)
+        channel.queue_declare(QUEUE_CLAUDE_B, durable=True, arguments=dead_letter_args)
         channel.queue_declare(QUEUE_RESULTS, durable=True)
         channel.queue_declare(QUEUE_DEAD, durable=True)
 
-        channel.queue_bind(QUEUE_CODEX, EXCHANGE_TASKS, ROUTING_TASK_CODEX)
-        channel.queue_bind(QUEUE_CLAUDE, EXCHANGE_TASKS, ROUTING_TASK_CLAUDE)
+        channel.queue_bind(QUEUE_CLAUDE_A, EXCHANGE_TASKS, ROUTING_TASK_CLAUDE_A)
+        channel.queue_bind(QUEUE_CLAUDE_B, EXCHANGE_TASKS, ROUTING_TASK_CLAUDE_B)
         channel.queue_bind(QUEUE_RESULTS, EXCHANGE_RESULTS, ROUTING_RESULT_ORCHESTRATOR)
         channel.queue_bind(QUEUE_DEAD, EXCHANGE_DLX, ROUTING_DEAD_TASK)
 

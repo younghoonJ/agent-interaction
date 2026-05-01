@@ -19,8 +19,8 @@ PIDFILE="$REPORT_DIR/.pids"
 CONTAINER="agent-review-rabbitmq"
 
 QUEUES=(
-    agent.task.codex
-    agent.task.claude
+    agent.task.claude_a
+    agent.task.claude_b
     agent.result.orchestrator
     agent.dead
 )
@@ -136,15 +136,15 @@ _procs_stop() {
 _procs_start() {
     mkdir -p "$LOG_DIR"
 
-    agent-review worker codex  "$PROJECT_ROOT" >> "$LOG_DIR/codex.log"  2>&1 &
+    PYTHONUNBUFFERED=1 agent-review worker claude_a "$PROJECT_ROOT" >> "$LOG_DIR/claude_a.log" 2>&1 &
     echo $! >> "$PIDFILE"
-    log "  codex worker    pid=$!   log=logs/codex.log"
+    log "  claude_a worker pid=$!   log=logs/claude_a.log"
 
-    agent-review worker claude "$PROJECT_ROOT" >> "$LOG_DIR/claude.log" 2>&1 &
+    PYTHONUNBUFFERED=1 agent-review worker claude_b "$PROJECT_ROOT" >> "$LOG_DIR/claude_b.log" 2>&1 &
     echo $! >> "$PIDFILE"
-    log "  claude worker   pid=$!   log=logs/claude.log"
+    log "  claude_b worker pid=$!   log=logs/claude_b.log"
 
-    agent-review orchestrator  "$PROJECT_ROOT" >> "$LOG_DIR/orch.log"  2>&1 &
+    PYTHONUNBUFFERED=1 agent-review orchestrator  "$PROJECT_ROOT" >> "$LOG_DIR/orch.log"  2>&1 &
     echo $! >> "$PIDFILE"
     log "  orchestrator    pid=$!   log=logs/orch.log"
 
@@ -281,7 +281,7 @@ cmd_status() {
 cmd_logs() {
     mkdir -p "$LOG_DIR"
     LOGS=()
-    for f in "$LOG_DIR/codex.log" "$LOG_DIR/claude.log" "$LOG_DIR/orch.log"; do
+    for f in "$LOG_DIR/claude_a.log" "$LOG_DIR/claude_b.log" "$LOG_DIR/orch.log"; do
         touch "$f"
         LOGS+=("$f")
     done
