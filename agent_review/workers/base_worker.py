@@ -24,10 +24,10 @@ from pathlib import Path
 from typing import Protocol
 
 from agent_review.messaging.rabbitmq import EXCHANGE_RESULTS, ROUTING_RESULT_ORCHESTRATOR, RabbitMQClient
-from agent_review.messaging.schemas import MODE_VERIFY, ResultMessage, ReviewReport, STATUS_COMPLETED, TaskMessage
+from agent_review.messaging.schemas import ResultMessage, ReviewReport, STATUS_COMPLETED, TaskMessage
 from agent_review.reports.json_report import write_report as write_json_report
 from agent_review.reports.markdown_report import write_report as write_markdown_report
-from agent_review.workers.prompt_builder import build_prompt, build_verify_prompt
+from agent_review.workers.prompt_builder import build_prompt
 from agent_review.workers.runners import AgentCommandError
 
 REPORT_DIR_NAME = ".agent_reports"
@@ -109,12 +109,14 @@ class ReviewWorker:
         report_dir: Path,
         allowed_write_dirs: tuple[str, ...] = (REPORT_DIR_NAME,),
         client: RabbitMQClient | None = None,
+        agent_perspectives: dict[str, dict[str, str]] | None = None,
     ) -> None:
         self.runner = runner
         self.project_root = project_root
         self.report_dir = report_dir
         self.allowed_write_dirs = allowed_write_dirs
         self.client = client
+        self.agent_perspectives: dict[str, dict[str, str]] = agent_perspectives or {}
 
     def handle_task(self, task: TaskMessage, failure_count: int = 0) -> ResultMessage:
         """Run one task and return a result message.
@@ -197,14 +199,8 @@ class ReviewWorker:
         task_dir = self.report_dir / "tasks" / task.task_id
         task_dir.mkdir(parents=True, exist_ok=True)
         prompt_path = task_dir / f"round-{task.round:02d}-{task.current_agent}-prompt.md"
-        if task.mode == MODE_VERIFY:
-            file_contents = {
-                path: (Path(task.project_root) / path).read_text(encoding="utf-8")
-                for path in task.target_files
-            }
-            prompt_text = build_verify_prompt(task, previous_reports, file_contents)
-        else:
-            prompt_text = build_prompt(task, previous_reports)
+        perspective = self.agent_perspectives.get(task.current_agent, {})
+        prompt_text = build_prompt(task, previous_reports, perspective)
         prompt_path.write_text(prompt_text, encoding="utf-8")
         return prompt_path
 
@@ -244,6 +240,8 @@ def parse_review_report(stdout: str, task: TaskMessage) -> ReviewReport:
     if not isinstance(data, dict):
         raise ValueError("Agent output must be a JSON object.")
     report = ReviewReport.from_dict(data)
+    if sorted(report.target_files) != sorted(task.target_files):
+        raise ValueError(f"Report target_files {report.target_files!r} does not match task {task.target_files!r}.")
     return report
 
 

@@ -40,11 +40,31 @@ project:
 review:
   mode: "review_only"
   max_rounds: 4
-  first_agent: "codex"
+  first_agent: "agent_a"
   agent_sequence:
-    - "codex"
-    - "claude"
+    - "agent_a"
+    - "agent_b"
   stop_when_no_findings: true
+
+# Per-agent configuration. Each key is the agent name used in agent_sequence.
+# command: CLI command to invoke the agent (prompt passed via stdin).
+# timeout_seconds: max execution time per task.
+# role_desc / focus: optional strings injected into the verify-mode prompt.
+agents:
+  agent_a:
+    command:
+      - "claude"
+      - "--print"
+    timeout_seconds: 900
+    role_desc: ""
+    focus: ""
+  agent_b:
+    command:
+      - "claude"
+      - "--print"
+    timeout_seconds: 900
+    role_desc: ""
+    focus: ""
 
 safety:
   allow_source_modification: false

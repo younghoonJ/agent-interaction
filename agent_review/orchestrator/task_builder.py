@@ -19,8 +19,8 @@ from datetime import datetime
 from pathlib import Path
 
 from agent_review.messaging.schemas import (
-    AGENT_CLAUDE,
-    AGENT_CODEX,
+    AGENT_A,
+    AGENT_B,
     MODE_REVIEW_ONLY,
     MODE_VERIFY,
     TaskMessage,
@@ -64,8 +64,8 @@ class TaskBuilder:
 
     project_root: Path
     max_rounds: int = 4
-    first_agent: str = AGENT_CODEX
-    agent_sequence: tuple[str, ...] = (AGENT_CODEX, AGENT_CLAUDE)
+    first_agent: str = AGENT_A
+    agent_sequence: tuple[str, ...] = (AGENT_A, AGENT_B)
     mode: str = MODE_REVIEW_ONLY
     review_focus: tuple[str, ...] = DEFAULT_REVIEW_FOCUS
     forbidden_actions: tuple[str, ...] = DEFAULT_FORBIDDEN_ACTIONS
@@ -196,9 +196,10 @@ class TaskBuilder:
             raise ValueError("max_rounds must be positive.")
         if self.first_agent not in self.agent_sequence:
             raise ValueError("first_agent must appear in agent_sequence.")
+        import re
         for agent in self.agent_sequence:
-            if agent not in {AGENT_CODEX, AGENT_CLAUDE}:
-                raise ValueError(f"Unsupported agent in sequence: {agent}")
+            if not re.match(r'^[a-z][a-z0-9_]*$', agent):
+                raise ValueError(f"Invalid agent name in sequence: {agent}")
 
     def _agent_after(self, agent: str) -> str:
         index = self.agent_sequence.index(agent)

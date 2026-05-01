@@ -22,11 +22,10 @@ from pathlib import Path
 from agent_review.messaging.rabbitmq import (
     EXCHANGE_TASKS,
     QUEUE_RESULTS,
-    ROUTING_TASK_CLAUDE,
-    ROUTING_TASK_CODEX,
     RabbitMQClient,
+    routing_for_agent,
 )
-from agent_review.messaging.schemas import AGENT_CODEX, ResultMessage, ReviewReport, STATUS_COMPLETED, STATUS_FAILED
+from agent_review.messaging.schemas import ResultMessage, ReviewReport, STATUS_COMPLETED, STATUS_FAILED
 from agent_review.orchestrator.report_builder import ReportBuilder
 from agent_review.orchestrator.scheduler import STATE_DEAD, STATE_DONE, STATE_RUNNING, Scheduler
 from agent_review.orchestrator.state_access import allow_empty_string_list, optional_int, require_int
@@ -189,8 +188,6 @@ class Orchestrator:
 
 
 def _routing_for_agent(agent: str) -> str:
-    if agent == AGENT_CODEX:
-        return ROUTING_TASK_CODEX
-    return ROUTING_TASK_CLAUDE
+    return routing_for_agent(agent)
 
 

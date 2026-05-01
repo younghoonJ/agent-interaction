@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from agent_review.messaging.schemas import AGENT_CLAUDE_A, AGENT_CLAUDE_B, ReviewReport
+from agent_review.messaging.schemas import AGENT_A, AGENT_B, ReviewReport
 
 STATE_AWAITING_HUMAN = "awaiting_human"
 STATE_DEAD = "dead"
@@ -72,7 +72,7 @@ class Scheduler:
         Codex (OpenAI), generated 2026-05-01.
     """
 
-    agent_sequence: tuple[str, ...] = (AGENT_CLAUDE_A, AGENT_CLAUDE_B)
+    agent_sequence: tuple[str, ...] = (AGENT_A, AGENT_B)
     stop_when_no_findings: bool = True
     max_retries: int = 3
 
@@ -91,9 +91,10 @@ class Scheduler:
 
         if not self.agent_sequence:
             raise ValueError("agent_sequence must not be empty.")
+        import re
         for agent in self.agent_sequence:
-            if agent not in {AGENT_CLAUDE_A, AGENT_CLAUDE_B}:
-                raise ValueError(f"Unsupported agent in sequence: {agent}")
+            if not re.match(r'^[a-z][a-z0-9_]*$', agent):
+                raise ValueError(f"Invalid agent name in sequence: {agent}")
         if self.max_retries < 1:
             raise ValueError("max_retries must be positive.")
 
@@ -123,6 +124,8 @@ class Scheduler:
             raise ValueError("prior_consecutive_no_finding_rounds must not be negative.")
 
         no_finding_rounds = prior_consecutive_no_finding_rounds + 1 if not report.findings else 0
+        if report.has_critical_finding() or report.requires_human_review:
+            return ScheduleDecision(STATE_AWAITING_HUMAN, None, None, "critical finding requires human review", no_finding_rounds)
         if report.round >= max_rounds:
             return ScheduleDecision(STATE_DONE, None, None, "max rounds reached", no_finding_rounds)
 

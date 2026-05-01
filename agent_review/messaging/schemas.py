@@ -18,8 +18,8 @@ from dataclasses import dataclass, field
 from pathlib import PurePosixPath
 from typing import Mapping
 
-AGENT_CLAUDE_A = "claude_a"
-AGENT_CLAUDE_B = "claude_b"
+AGENT_A = "agent_a"
+AGENT_B = "agent_b"
 MESSAGE_TYPE_TASK = "agent_task"
 MESSAGE_TYPE_RESULT = "agent_result"
 MODE_REVIEW_ONLY = "review_only"
@@ -743,8 +743,9 @@ def _mapping_list(data: Mapping[str, object], key: str) -> list[Mapping[str, obj
 
 
 def _validate_agent(value: str) -> str:
-    if value not in {AGENT_CLAUDE_A, AGENT_CLAUDE_B}:
-        raise ValueError(f"Unsupported agent: {value}")
+    import re
+    if not re.match(r'^[a-z][a-z0-9_]*$', value):
+        raise ValueError(f"Invalid agent name '{value}': must be lowercase alphanumeric with underscores.")
     return value
 
 
